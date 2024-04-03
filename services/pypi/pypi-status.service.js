@@ -1,32 +1,25 @@
-'use strict'
+import { pathParams } from '../index.js'
+import PypiBase from './pypi-base.js'
+import { parseClassifiers } from './pypi-helpers.js'
 
-const PypiBase = require('./pypi-base')
-const { parseClassifiers } = require('./pypi-helpers')
+export default class PypiStatus extends PypiBase {
+  static category = 'other'
 
-module.exports = class PypiStatus extends PypiBase {
-  static get category() {
-    return 'other'
-  }
+  static route = this.buildRoute('pypi/status')
 
-  static get route() {
-    return this.buildRoute('pypi/status')
-  }
-
-  static get examples() {
-    return [
-      {
-        title: 'PyPI - Status',
-        pattern: ':packageName',
-        namedParams: { packageName: 'Django' },
-        staticPreview: this.render({ status: 'stable' }),
-        keywords: ['python'],
+  static openApi = {
+    '/pypi/status/{packageName}': {
+      get: {
+        summary: 'PyPI - Status',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'Django',
+        }),
       },
-    ]
+    },
   }
 
-  static get defaultBadgeData() {
-    return { label: 'status' }
-  }
+  static defaultBadgeData = { label: 'status' }
 
   static render({ status = '' }) {
     status = status.toLowerCase()
@@ -61,7 +54,7 @@ module.exports = class PypiStatus extends PypiBase {
     // https://pypi.org/pypi?%3Aaction=list_classifiers
     const status = parseClassifiers(
       packageData,
-      /^Development Status :: (\d - \S+)$/
+      /^Development Status :: (\d - \S+)$/,
     )
       .sort()
       .map(classifier => classifier.split(' - ').pop())

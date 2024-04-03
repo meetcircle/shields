@@ -1,9 +1,6 @@
-'use strict'
-
-const Joi = require('@hapi/joi')
-const { version: versionColor } = require('../color-formatters')
-const { nonNegativeInteger } = require('../validators')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { nonNegativeInteger } from '../validators.js'
+import { BaseJsonService } from '../index.js'
 
 const clojarsSchema = Joi.object({
   downloads: nonNegativeInteger,
@@ -22,30 +19,7 @@ class BaseClojarsService extends BaseJsonService {
   }
 }
 
-class BaseClojarsVersionService extends BaseClojarsService {
-  static get category() {
-    return 'version'
-  }
+const description =
+  '[Clojars](https://clojars.org/) is a repository for Clojure libraries'
 
-  static get examples() {
-    return [
-      {
-        namedParams: { clojar: 'prismic' },
-        staticPreview: this.render({ clojar: 'clojar', version: '1.2' }),
-      },
-    ]
-  }
-
-  static get defaultBadgeData() {
-    return { label: 'clojars' }
-  }
-
-  static render({ clojar, version }) {
-    return {
-      message: `[${clojar} "${version}"]`,
-      color: versionColor(version),
-    }
-  }
-}
-
-module.exports = { BaseClojarsService, BaseClojarsVersionService }
+export { BaseClojarsService, description }

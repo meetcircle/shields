@@ -1,13 +1,11 @@
-'use strict'
-
-const { expect } = require('chai')
-const nock = require('nock')
-const { cleanUpNockAfterEach, defaultContext } = require('../test-helpers')
-const SymfonyInsightGrade = require('./symfony-insight-grade.service')
-const SymfonyInsightStars = require('./symfony-insight-stars.service')
-const SymfonyInsightViolations = require('./symfony-insight-violations.service')
-const {
-  sampleProjectUuid: projectUuid,
+import { expect } from 'chai'
+import nock from 'nock'
+import { cleanUpNockAfterEach, defaultContext } from '../test-helpers.js'
+import SymfonyInsightGrade from './symfony-insight-grade.service.js'
+import SymfonyInsightStars from './symfony-insight-stars.service.js'
+import SymfonyInsightViolations from './symfony-insight-violations.service.js'
+import {
+  sampleProjectUuid as projectUuid,
   runningMockResponse,
   platinumMockResponse,
   goldMockResponse,
@@ -23,7 +21,7 @@ const {
   user,
   token,
   config,
-} = require('./symfony-test-helpers')
+} from './symfony-test-helpers.js'
 
 // These tests are organized in a fairly unusual way because the service uses
 // XML, so it's difficult to decouple the parsing from the transform + render.
@@ -32,7 +30,7 @@ const {
 //
 // In most other cases, do not follow this pattern. Instead, write a .spec file
 // with sazerac tests of the transform and render functions.
-describe('SymfonyInsight[Grade|Stars|Violation]', function() {
+describe('SymfonyInsight[Grade|Stars|Violation]', function () {
   cleanUpNockAfterEach()
 
   function createMock() {
@@ -41,10 +39,10 @@ describe('SymfonyInsight[Grade|Stars|Violation]', function() {
       .basicAuth({ user, pass: token })
   }
 
-  it('401 not authorized grade', async function() {
+  it('401 not authorized grade', async function () {
     const scope = createMock().reply(401)
     expect(
-      await SymfonyInsightGrade.invoke(defaultContext, config, { projectUuid })
+      await SymfonyInsightGrade.invoke(defaultContext, config, { projectUuid }),
     ).to.deep.equal({
       message: 'not authorized to access project',
       color: 'lightgray',
@@ -65,38 +63,38 @@ describe('SymfonyInsight[Grade|Stars|Violation]', function() {
       throw Error(`Oops, what are those doing there: ${rest.join(', ')}`)
     }
 
-    describe(description, function() {
+    describe(description, function () {
       if (expectedGradeBadge) {
-        it('grade', async function() {
+        it('grade', async function () {
           const scope = createMock().reply(200, response)
           expect(
             await SymfonyInsightGrade.invoke(defaultContext, config, {
               projectUuid,
-            })
+            }),
           ).to.deep.equal(expectedGradeBadge)
           scope.done()
         })
       }
 
       if (expectedStarsBadge) {
-        it('stars', async function() {
+        it('stars', async function () {
           const scope = createMock().reply(200, response)
           expect(
             await SymfonyInsightStars.invoke(defaultContext, config, {
               projectUuid,
-            })
+            }),
           ).to.deep.equal(expectedStarsBadge)
           scope.done()
         })
       }
 
       if (expectedViolationsBadge) {
-        it('violations', async function() {
+        it('violations', async function () {
           const scope = createMock().reply(200, response)
           expect(
             await SymfonyInsightViolations.invoke(defaultContext, config, {
               projectUuid,
-            })
+            }),
           ).to.deep.equal(expectedViolationsBadge)
           scope.done()
         })

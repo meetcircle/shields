@@ -1,15 +1,14 @@
-'use strict'
-
-const Joi = require('@hapi/joi')
-const { invalidJSON } = require('../response-fixtures')
-const t = (module.exports = require('../tester').createServiceTester())
+import Joi from 'joi'
+import { invalidJSON } from '../response-fixtures.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 const isUptimeStatus = Joi.string().valid(
   'paused',
   'not checked yet',
   'up',
   'seems down',
-  'down'
+  'down',
 )
 
 t.create('Uptime Robot: Status (valid)')
@@ -35,7 +34,7 @@ t.create('Uptime Robot: Status (unspecified error)')
   .intercept(nock =>
     nock('https://api.uptimerobot.com')
       .post('/v2/getMonitors')
-      .reply(200, '{"stat": "fail"}')
+      .reply(200, '{"stat": "fail"}'),
   )
   .expectBadge({ label: 'status', message: 'service error' })
 
@@ -44,7 +43,7 @@ t.create('Uptime Robot: Status (service unavailable)')
   .intercept(nock =>
     nock('https://api.uptimerobot.com')
       .post('/v2/getMonitors')
-      .reply(503, '{"error": "oh noes!!"}')
+      .reply(503, '{"error": "oh noes!!"}'),
   )
   .expectBadge({ label: 'status', message: 'inaccessible' })
 
@@ -53,7 +52,7 @@ t.create('Uptime Robot: Status (unexpected response, valid json)')
   .intercept(nock =>
     nock('https://api.uptimerobot.com')
       .post('/v2/getMonitors')
-      .reply(200, '[]')
+      .reply(200, '[]'),
   )
   .expectBadge({ label: 'status', message: 'invalid response data' })
 
@@ -62,6 +61,6 @@ t.create('Uptime Robot: Status (unexpected response, invalid json)')
   .intercept(nock =>
     nock('https://api.uptimerobot.com')
       .post('/v2/getMonitors')
-      .reply(invalidJSON)
+      .reply(invalidJSON),
   )
   .expectBadge({ label: 'status', message: 'unparseable json response' })

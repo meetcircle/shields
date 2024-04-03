@@ -1,16 +1,14 @@
-'use strict'
-
-const { expect } = require('chai')
-const Joi = require('@hapi/joi')
-const { test, given, forCases } = require('sazerac')
-const {
+import { expect } from 'chai'
+import Joi from 'joi'
+import { test, given, forCases } from 'sazerac'
+import {
   prepareRoute,
   namedParamsForMatch,
   getQueryParamNames,
-} = require('./route')
+} from './route.js'
 
-describe('Route helpers', function() {
-  context('A `pattern` with a named param is declared', function() {
+describe('Route helpers', function () {
+  context('A `pattern` with a named param is declared', function () {
     const { regex, captureNames } = prepareRoute({
       base: 'foo',
       pattern: ':namedParamA',
@@ -36,7 +34,7 @@ describe('Route helpers', function() {
     })
   })
 
-  context('A `format` with a named param is declared', function() {
+  context('A `format` with a named param is declared', function () {
     const { regex, captureNames } = prepareRoute({
       base: 'foo',
       format: '([^/]+?)',
@@ -62,7 +60,7 @@ describe('Route helpers', function() {
     })
   })
 
-  context('No named params are declared', function() {
+  context('No named params are declared', function () {
     const { regex, captureNames } = prepareRoute({
       base: 'foo',
       format: '(?:[^/]+)',
@@ -78,7 +76,7 @@ describe('Route helpers', function() {
     })
   })
 
-  context('The wrong number of params are declared', function() {
+  context('The wrong number of params are declared', function () {
     const { regex, captureNames } = prepareRoute({
       base: 'foo',
       format: '([^/]+)/([^/]+)',
@@ -88,24 +86,24 @@ describe('Route helpers', function() {
     expect(() =>
       namedParamsForMatch(captureNames, regex.exec('/foo/bar/baz.svg'), {
         name: 'MyService',
-      })
+      }),
     ).to.throw(
-      'Service MyService declares incorrect number of named params (expected 2, got 1)'
+      'Service MyService declares incorrect number of named params (expected 2, got 1)',
     )
   })
 
-  it('getQueryParamNames', function() {
+  it('getQueryParamNames', function () {
     expect(
       getQueryParamNames({
         queryParamSchema: Joi.object({ foo: Joi.string() }).required(),
-      })
+      }),
     ).to.deep.equal(['foo'])
     expect(
       getQueryParamNames({
         queryParamSchema: Joi.object({ foo: Joi.string() })
           .rename('bar', 'foo', { ignoreUndefined: true, override: true })
           .required(),
-      })
+      }),
     ).to.deep.equal(['foo', 'bar'])
   })
 })

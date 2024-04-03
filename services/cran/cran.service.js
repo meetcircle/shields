@@ -1,8 +1,6 @@
-'use strict'
-
-const Joi = require('@hapi/joi')
-const { renderVersionBadge } = require('../version')
-const { BaseJsonService } = require('..')
+import Joi from 'joi'
+import { renderVersionBadge } from '../version.js'
+import { BaseJsonService, pathParams } from '../index.js'
 
 const schema = Joi.object({
   License: Joi.string().required(),
@@ -10,9 +8,7 @@ const schema = Joi.object({
 }).required()
 
 class BaseCranService extends BaseJsonService {
-  static get defaultBadgeData() {
-    return { label: 'cran' }
-  }
+  static defaultBadgeData = { label: 'cran' }
 
   async fetch({ packageName }) {
     const url = `http://crandb.r-pkg.org/${packageName}`
@@ -21,25 +17,19 @@ class BaseCranService extends BaseJsonService {
 }
 
 class CranLicense extends BaseCranService {
-  static get category() {
-    return 'license'
-  }
+  static category = 'license'
+  static route = { base: 'cran/l', pattern: ':packageName' }
 
-  static get route() {
-    return {
-      base: 'cran/l',
-      pattern: ':packageName',
-    }
-  }
-
-  static get examples() {
-    return [
-      {
-        title: 'CRAN/METACRAN',
-        namedParams: { packageName: 'devtools' },
-        staticPreview: this.render({ license: 'GPL (>= 2)' }),
+  static openApi = {
+    '/cran/l/{packageName}': {
+      get: {
+        summary: 'CRAN/METACRAN License',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'devtools',
+        }),
       },
-    ]
+    },
   }
 
   static render({ license }) {
@@ -52,30 +42,24 @@ class CranLicense extends BaseCranService {
 
   async handle({ packageName }) {
     const data = await this.fetch({ packageName })
-    return this.constructor.render({ license: data['License'] })
+    return this.constructor.render({ license: data.License })
   }
 }
 
 class CranVersion extends BaseCranService {
-  static get category() {
-    return 'version'
-  }
+  static category = 'version'
+  static route = { base: 'cran/v', pattern: ':packageName' }
 
-  static get route() {
-    return {
-      base: 'cran/v',
-      pattern: ':packageName',
-    }
-  }
-
-  static get examples() {
-    return [
-      {
-        title: 'CRAN/METACRAN',
-        namedParams: { packageName: 'devtools' },
-        staticPreview: this.render({ version: '2.0.1' }),
+  static openApi = {
+    '/cran/v/{packageName}': {
+      get: {
+        summary: 'CRAN/METACRAN Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'devtools',
+        }),
       },
-    ]
+    },
   }
 
   static render({ version }) {
@@ -84,8 +68,8 @@ class CranVersion extends BaseCranService {
 
   async handle({ packageName }) {
     const data = await this.fetch({ packageName })
-    return this.constructor.render({ version: data['Version'] })
+    return this.constructor.render({ version: data.Version })
   }
 }
 
-module.exports = { CranLicense, CranVersion }
+export { CranLicense, CranVersion }

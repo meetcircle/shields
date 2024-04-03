@@ -1,62 +1,57 @@
-'use strict'
+import { MetricNames } from '../../core/base-service/metric-helper.js'
+import { BaseJsonService, queryParams } from '../index.js'
+import { createRoute } from './dynamic-helpers.js'
+import jsonPath from './json-path.js'
 
-const Joi = require('@hapi/joi')
-const jp = require('jsonpath')
-const { renderDynamicBadge, errorMessages } = require('../dynamic-common')
-const { createRoute } = require('./dynamic-helpers')
-const { BaseJsonService, InvalidParameter, InvalidResponse } = require('..')
+const description = `
+The Dynamic JSON Badge allows you to extract an arbitrary value from any
+JSON Document using a JSONPath selector and show it on a badge.
+`
 
-module.exports = class DynamicJson extends BaseJsonService {
-  static get category() {
-    return 'dynamic'
+export default class DynamicJson extends jsonPath(BaseJsonService) {
+  static enabledMetrics = [MetricNames.SERVICE_RESPONSE_SIZE]
+  static route = createRoute('json')
+  static openApi = {
+    '/badge/dynamic/json': {
+      get: {
+        summary: 'Dynamic JSON Badge',
+        description,
+        parameters: queryParams(
+          {
+            name: 'url',
+            description: 'The URL to a JSON document',
+            required: true,
+            example:
+              'https://github.com/badges/shields/raw/master/package.json',
+          },
+          {
+            name: 'query',
+            description:
+              'A <a href="https://jsonpath.com/">JSONPath</a> expression that will be used to query the document',
+            required: true,
+            example: '$.name',
+          },
+          {
+            name: 'prefix',
+            description: 'Optional prefix to append to the value',
+            example: '[',
+          },
+          {
+            name: 'suffix',
+            description: 'Optional suffix to append to the value',
+            example: ']',
+          },
+        ),
+      },
+    },
   }
 
-  static get route() {
-    return createRoute('json')
-  }
-
-  static get defaultBadgeData() {
-    return {
-      label: 'custom badge',
-    }
-  }
-
-  async handle(namedParams, { url, query: pathExpression, prefix, suffix }) {
-    const data = await this._requestJson({
-      schema: Joi.any(),
+  async fetch({ schema, url, httpErrors }) {
+    return this._requestJson({
+      schema,
       url,
-      errorMessages,
+      httpErrors,
+      logErrors: [],
     })
-
-    // JSONPath only works on objects and arrays.
-    // https://github.com/badges/shields/issues/4018
-    if (typeof data !== 'object') {
-      throw new InvalidResponse({
-        prettyMessage: 'json must contain an object or array',
-      })
-    }
-
-    let values
-    try {
-      values = jp.query(data, pathExpression)
-    } catch (e) {
-      const { message } = e
-      if (
-        message.startsWith('Lexical error') ||
-        message.startsWith('Parse error')
-      ) {
-        throw new InvalidParameter({
-          prettyMessage: 'unparseable jsonpath query',
-        })
-      } else {
-        throw e
-      }
-    }
-
-    if (!values.length) {
-      throw new InvalidResponse({ prettyMessage: 'no result' })
-    }
-
-    return renderDynamicBadge({ value: values, prefix, suffix })
   }
 }

@@ -1,27 +1,25 @@
-'use strict'
+import {
+  isVPlusDottedVersionAtLeastOne,
+  isVPlusDottedVersionNClausesWithOptionalSuffix,
+} from '../test-validators.js'
+import { ServiceTester } from '../tester.js'
+export const t = new ServiceTester({
+  id: 'BowerVersion',
+  title: 'Bower Version',
+  pathPrefix: '/bower',
+})
 
-const Joi = require('@hapi/joi')
-const { isVPlusDottedVersionAtLeastOne } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+t.create('version').timeout(10000).get('/v/backbone.json').expectBadge({
+  label: 'bower',
+  message: isVPlusDottedVersionAtLeastOne,
+})
 
-const isBowerPrereleaseVersion = Joi.string().regex(
-  /^v\d+(\.\d+)?(\.\d+)?(-?[.\w\d])+?$/
-)
-
-t.create('version')
+t.create('pre version')
   .timeout(10000)
-  .get('/v/bootstrap.json')
+  .get('/v/angular.json?include_prereleases')
   .expectBadge({
     label: 'bower',
-    message: isVPlusDottedVersionAtLeastOne,
-  })
-
-t.create('pre version') // e.g. bower|v0.2.5-alpha-rc-pre
-  .timeout(10000)
-  .get('/vpre/bootstrap.json')
-  .expectBadge({
-    label: 'bower',
-    message: isBowerPrereleaseVersion,
+    message: isVPlusDottedVersionNClausesWithOptionalSuffix,
   })
 
 t.create('Version for Invalid Package')
@@ -31,23 +29,5 @@ t.create('Version for Invalid Package')
 
 t.create('Pre Version for Invalid Package')
   .timeout(10000)
-  .get('/vpre/it-is-a-invalid-package-should-error.json')
+  .get('/v/it-is-a-invalid-package-should-error.json?include_prereleases')
   .expectBadge({ label: 'bower', message: 'package not found' })
-
-t.create('Version label should be `no releases` if no stable version')
-  .get('/v/bootstrap.json')
-  .intercept(nock =>
-    nock('https://libraries.io')
-      .get('/api/bower/bootstrap')
-      .reply(200, { normalized_licenses: [], latest_stable_release: null })
-  )
-  .expectBadge({ label: 'bower', message: 'no releases' })
-
-t.create('Version label should be `no releases` if no pre-release')
-  .get('/vpre/bootstrap.json')
-  .intercept(nock =>
-    nock('https://libraries.io')
-      .get('/api/bower/bootstrap')
-      .reply(200, { normalized_licenses: [], latest_release_number: null })
-  )
-  .expectBadge({ label: 'bower', message: 'no releases' })

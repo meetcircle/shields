@@ -4,8 +4,6 @@
  * @module
  */
 
-'use strict'
-
 /**
  * Base error class
  *
@@ -44,6 +42,7 @@ class ShieldsRuntimeError extends Error {
     if (props.underlyingError) {
       this.stack = props.underlyingError.stack
     }
+    this.cacheSeconds = props.cacheSeconds
   }
 }
 
@@ -56,6 +55,7 @@ class NotFound extends ShieldsRuntimeError {
   get name() {
     return 'NotFound'
   }
+
   get defaultPrettyMessage() {
     return defaultNotFoundError
   }
@@ -82,6 +82,7 @@ class InvalidResponse extends ShieldsRuntimeError {
   get name() {
     return 'InvalidResponse'
   }
+
   get defaultPrettyMessage() {
     return 'invalid'
   }
@@ -107,6 +108,7 @@ class Inaccessible extends ShieldsRuntimeError {
   get name() {
     return 'Inaccessible'
   }
+
   get defaultPrettyMessage() {
     return 'inaccessible'
   }
@@ -131,6 +133,7 @@ class ImproperlyConfigured extends ShieldsRuntimeError {
   get name() {
     return 'ImproperlyConfigured'
   }
+
   get defaultPrettyMessage() {
     return 'improperly configured'
   }
@@ -156,6 +159,7 @@ class InvalidParameter extends ShieldsRuntimeError {
   get name() {
     return 'InvalidParameter'
   }
+
   get defaultPrettyMessage() {
     return 'invalid parameter'
   }
@@ -180,6 +184,7 @@ class Deprecated extends ShieldsRuntimeError {
   get name() {
     return 'Deprecated'
   }
+
   get defaultPrettyMessage() {
     return 'no longer available'
   }
@@ -202,9 +207,12 @@ class Deprecated extends ShieldsRuntimeError {
  * @property {string} prettyMessage User-facing error message to override the
  * value of `defaultPrettyMessage()`. This is the text that will appear on the
  * badge when we catch and render the exception (Optional)
+ * @property {number} cacheSeconds Length of time to cache this error response
+ * for. Defaults to the cacheLength of the service class throwing the error
+ * (Optional)
  */
 
-module.exports = {
+export {
   ShieldsRuntimeError,
   NotFound,
   ImproperlyConfigured,

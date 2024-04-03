@@ -1,21 +1,16 @@
-'use strict'
-
-const makeBadge = require('../../gh-badges/lib/make-badge')
-const BaseService = require('./base')
-const {
+import makeBadge from '../../badge-maker/lib/make-badge.js'
+import BaseService from './base.js'
+import {
   serverHasBeenUpSinceResourceCached,
   setCacheHeadersForStaticResource,
-} = require('./cache-headers')
-const { makeSend } = require('./legacy-result-sender')
-const { MetricHelper } = require('./metric-helper')
-const coalesceBadge = require('./coalesce-badge')
-const { prepareRoute, namedParamsForMatch } = require('./route')
+} from './cache-headers.js'
+import { makeSend } from './legacy-result-sender.js'
+import { MetricHelper } from './metric-helper.js'
+import coalesceBadge from './coalesce-badge.js'
+import { prepareRoute, namedParamsForMatch } from './route.js'
 
-module.exports = class BaseStaticService extends BaseService {
+export default class BaseStaticService extends BaseService {
   static register({ camp, metricInstance }, serviceConfig) {
-    const {
-      profiling: { makeBadge: shouldProfileMakeBadge },
-    } = serviceConfig
     const { regex, captureNames } = prepareRoute(this.route)
 
     const metricHelper = MetricHelper.create({
@@ -38,30 +33,23 @@ module.exports = class BaseStaticService extends BaseService {
         {},
         serviceConfig,
         namedParams,
-        queryParams
+        queryParams,
       )
 
       const badgeData = coalesceBadge(
         queryParams,
         serviceData,
         this.defaultBadgeData,
-        this
+        this,
       )
 
       // The final capture group is the extension.
       const format = (match.slice(-1)[0] || '.svg').replace(/^\./, '')
       badgeData.format = format
 
-      if (shouldProfileMakeBadge) {
-        console.time('makeBadge total')
-      }
-      const svg = makeBadge(badgeData)
-      if (shouldProfileMakeBadge) {
-        console.timeEnd('makeBadge total')
-      }
-
       setCacheHeadersForStaticResource(ask.res)
 
+      const svg = makeBadge(badgeData)
       makeSend(format, ask.res, end)(svg)
 
       metricHandle.noteResponseSent()

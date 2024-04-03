@@ -1,14 +1,11 @@
-'use strict'
+import { createServiceTester } from '../tester.js'
+import { isMetric } from '../test-validators.js'
+export const t = await createServiceTester()
 
-const t = (module.exports = require('../tester').createServiceTester())
-const { isMetric } = require('../test-validators')
-
-t.create('Contributors')
-  .get('/contributors/badges/shields.json')
-  .expectBadge({
-    label: 'contributors',
-    message: isMetric,
-  })
+t.create('Contributors').get('/contributors/badges/shields.json').expectBadge({
+  label: 'contributors',
+  message: isMetric,
+})
 
 t.create('1 contributor')
   .get('/contributors/badges/shields-tests.json')

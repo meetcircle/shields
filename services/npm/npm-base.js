@@ -1,9 +1,7 @@
-'use strict'
-
-const Joi = require('@hapi/joi')
-const { optionalUrl } = require('../validators')
-const { isDependencyMap } = require('../package-json-helpers')
-const { BaseJsonService, InvalidResponse, NotFound } = require('..')
+import Joi from 'joi'
+import { optionalUrl } from '../validators.js'
+import { isDependencyMap } from '../package-json-helpers.js'
+import { BaseJsonService, InvalidResponse, NotFound } from '../index.js'
 
 const deprecatedLicenseObjectSchema = Joi.object({
   type: Joi.string().required(),
@@ -17,8 +15,8 @@ const packageDataSchema = Joi.object({
     Joi.string(),
     deprecatedLicenseObjectSchema,
     Joi.array().items(
-      Joi.alternatives(Joi.string(), deprecatedLicenseObjectSchema)
-    )
+      Joi.alternatives(Joi.string(), deprecatedLicenseObjectSchema),
+    ),
   ),
   maintainers: Joi.array()
     // We don't need the keys here, just the length.
@@ -29,27 +27,29 @@ const packageDataSchema = Joi.object({
   // https://www.typescriptlang.org/docs/handbook/declaration-files/publishing.html#including-declarations-in-your-npm-package
   // > Note that the "typings" field is synonymous with "types"
   typings: Joi.string(),
-  files: Joi.array()
-    .items(Joi.string())
-    .default([]),
+  files: Joi.array().items(Joi.string()).default([]),
 }).required()
 
-const queryParamSchema = Joi.object({
+export const queryParamSchema = Joi.object({
   registry_uri: optionalUrl,
 }).required()
 
+export const packageNameDescription =
+  'This may be the name of an unscoped package like `package-name` or a [scoped package](https://docs.npmjs.com/about-scopes) like `@author/package-name`'
+
 // Abstract class for NPM badges which display data about the latest version
 // of a package.
-module.exports = class NpmBase extends BaseJsonService {
-  static get auth() {
-    return { passKey: 'npm_token' }
+export default class NpmBase extends BaseJsonService {
+  static auth = {
+    passKey: 'npm_token',
+    serviceKey: 'npm',
   }
 
   static buildRoute(base, { withTag } = {}) {
     if (withTag) {
       return {
         base,
-        pattern: ':scope(@[^/]+)?/:packageName/:tag?',
+        pattern: ':scope(@[^/]+)?/:packageName/:tag*',
         queryParamSchema,
       }
     } else {
@@ -63,7 +63,7 @@ module.exports = class NpmBase extends BaseJsonService {
 
   static unpackParams(
     { scope, packageName, tag },
-    { registry_uri: registryUrl = 'https://registry.npmjs.org' }
+    { registry_uri: registryUrl = 'https://registry.npmjs.org' },
   ) {
     return {
       scope,
@@ -81,27 +81,32 @@ module.exports = class NpmBase extends BaseJsonService {
   }
 
   async _requestJson(data) {
-    return super._requestJson({
-      ...data,
-      options: {
-        headers: {
-          // Use a custom Accept header because of this bug:
-          // <https://github.com/npm/npmjs.org/issues/163>
-          Accept: '*/*',
-          ...this.authHelper.bearerAuthHeader,
+    return super._requestJson(
+      this.authHelper.withBearerAuthHeader({
+        ...data,
+        options: {
+          headers: {
+            // Use a custom Accept header because of this bug:
+            // <https://github.com/npm/npmjs.org/issues/163>
+            Accept: '*/*',
+          },
         },
-      },
-    })
+      }),
+    )
   }
 
   async fetchPackageData({ registryUrl, scope, packageName, tag }) {
     registryUrl = registryUrl || this.constructor.defaultRegistryUrl
     let url
-    if (scope === undefined) {
+    if (scope === undefined && tag === undefined) {
       // e.g. https://registry.npmjs.org/express/latest
       // Use this endpoint as an optimization. It covers the vast majority of
       // these badges, and the response is smaller.
       url = `${registryUrl}/${packageName}/latest`
+    } else if (scope === undefined && tag !== undefined) {
+      // e.g. https://registry.npmjs.org/express
+      // because https://registry.npmjs.org/express/canary does not work
+      url = `${registryUrl}/${packageName}`
     } else {
       // e.g. https://registry.npmjs.org/@cedx%2Fgulp-david
       // because https://registry.npmjs.org/@cedx%2Fgulp-david/latest does not work
@@ -115,11 +120,11 @@ module.exports = class NpmBase extends BaseJsonService {
       // We don't validate here because we need to pluck the desired subkey first.
       schema: Joi.any(),
       url,
-      errorMessages: { 404: 'package not found' },
+      httpErrors: { 404: 'package not found' },
     })
 
     let packageData
-    if (scope === undefined) {
+    if (scope === undefined && tag === undefined) {
       packageData = json
     } else {
       const registryTag = tag || 'latest'
@@ -139,5 +144,3 @@ module.exports = class NpmBase extends BaseJsonService {
     return this.constructor._validate(packageData, packageDataSchema)
   }
 }
-
-module.exports.queryParamSchema = queryParamSchema

@@ -1,13 +1,10 @@
-'use strict'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
-const t = (module.exports = require('../tester').createServiceTester())
-
-t.create('license')
-  .get('/notepad4e.json')
-  .expectBadge({
-    label: 'license',
-    message: 'EPL 2.0',
-  })
+t.create('license').get('/notepad4e.json').expectBadge({
+  label: 'license',
+  message: 'EPL 2.0',
+})
 
 t.create('unspecified license')
   .get('/notepad4e.json')
@@ -20,8 +17,8 @@ t.create('unspecified license')
            <node id="3108021" name="Notepad4e" url="https://marketplace.eclipse.org/content/notepad4e">
              <license/>
            </node>
-         </marketplace>`
-      )
+         </marketplace>`,
+      ),
   )
   .expectBadge({
     label: 'license',

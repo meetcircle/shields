@@ -1,10 +1,8 @@
-'use strict'
-
-const { test, given } = require('sazerac')
-const { latest, slice, rangeStart, renderVersionBadge } = require('./version')
+import { test, given } from 'sazerac'
+import { latest, slice, rangeStart, renderVersionBadge } from './version.js'
 const includePre = true
 
-describe('Version helpers', function() {
+describe('Version helpers', function () {
   test(latest, () => {
     // semver-compatible versions.
     given(['1.0.0', '1.0.2', '1.0.1']).expect('1.0.2')
@@ -56,7 +54,7 @@ describe('Version helpers', function() {
         'v1.0.1-RC.2',
         'v1.0.0',
       ],
-      { pre: includePre }
+      { pre: includePre },
     ).expect('v1.0.1-RC.2')
     given(
       [
@@ -68,8 +66,19 @@ describe('Version helpers', function() {
         'v1.0.1-RC.2',
         'v1.0.1',
       ],
-      { pre: includePre }
+      { pre: includePre },
     ).expect('v1.0.1')
+    given(
+      [
+        'v1.0.1-alpha.2',
+        'v1.0.1-alpha.1',
+        'v1.0.1-beta.3',
+        'v1.0.1-beta.1',
+        'v1.0.1-RC.1',
+      ],
+      { pre: includePre },
+    ).expect('v1.0.1-RC.1')
+
     // Exclude pre-releases
     given([
       'v1.0.1-alpha.2',
@@ -89,6 +98,13 @@ describe('Version helpers', function() {
       'v1.0.1-RC.2',
       'v1.0.1',
     ]).expect('v1.0.1')
+    given([
+      'v1.0.1-alpha.2',
+      'v1.0.1-alpha.1',
+      'v1.0.1-beta.3',
+      'v1.0.1-beta.1',
+      'v1.0.1-RC.1',
+    ]).expect('v1.0.1-RC.1')
 
     // Versions with 'release-' prefix
     given([
@@ -100,8 +116,11 @@ describe('Version helpers', function() {
 
     // Semver mixed with non semver versions
     given(['1.0.0', '1.0.2', '1.1', '1.0', 'notaversion2', '12bcde4']).expect(
-      '1.1'
+      '1.1',
     )
+
+    // build qualifiers - https://github.com/badges/shields/issues/4172
+    given(['0.3.9', '0.4.0+1', '0.4.0+9']).expect('0.4.0+9')
   })
 
   test(slice, () => {

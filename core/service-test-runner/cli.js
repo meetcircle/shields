@@ -43,41 +43,59 @@
 // 1. Generating the list of services to test is necessarily asynchronous, and
 //    in Mocha, exclusive tests (`it.only` and `describe.only`) can only be
 //    applied synchronously. In other words, if you try to add exclusive tests
-//    in an asynchronous callback, all the tests will run. This is true even
-//    when using `_mocha --delay`, as we are. Undoubtedly this could be fixed,
-//    though it's not worth it. The problem is obscure and therefore low
-//    for Mocha, which is quite backlogged. There is an easy workaround, which
-//    is to generate the list of services to test in a separate process.
+//    in an asynchronous callback, all the tests will run. Undoubtedly this
+//    could be fixed, though it's not worth it. The problem is obscure and
+//    therefore low for Mocha, which is quite backlogged. There is an easy
+//    workaround, which is to generate the list of services to test in a
+//    separate process.
 // 2. Executing these two steps of the test runner separately makes the process
 //    easier to reason about and much easier to debug on a dev machine.
 // 3. Getting "pipefail" to work cross platform with an npm script seems tricky.
 //    Relying on npm scripts is safer. Using "pre" makes it impossible to run
 //    the second step without the first.
 
-'use strict'
+import minimist from 'minimist'
+import envFlag from 'node-env-flag'
+import readAllStdinSync from 'read-all-stdin-sync'
+import { createTestServer } from '../server/in-process-server-test-helpers.js'
+import Runner from './runner.js'
 
-const minimist = require('minimist')
-const envFlag = require('node-env-flag')
-const readAllStdinSync = require('read-all-stdin-sync')
-const { createTestServer } = require('../server/in-process-server-test-helpers')
-const Runner = require('./runner')
-
-require('../unhandled-rejection.spec')
+import('../unhandled-rejection.spec.js')
 
 const retry = {}
 retry.count = parseInt(process.env.RETRY_COUNT) || 0
 retry.backoff = parseInt(process.env.RETRY_BACKOFF) || 0
+
+const args = minimist(process.argv.slice(3))
+const stdinOption = args.stdin
+const onlyOption = args.only
+let onlyServices
+if (stdinOption && onlyOption) {
+  console.error('Do not use --only with --stdin')
+} else if (stdinOption) {
+  const allStdin = readAllStdinSync().trim()
+  onlyServices = allStdin ? allStdin.split('\n') : []
+} else if (onlyOption) {
+  onlyServices = onlyOption.split(',')
+}
+
 let baseUrl, server
 if (process.env.TESTED_SERVER_URL) {
   baseUrl = process.env.TESTED_SERVER_URL
 } else {
   const port = 1111
   baseUrl = 'http://localhost:1111'
-  before('Start running the server', function() {
-    server = createTestServer({ port })
-    server.start()
+  before('Start running the server', async function () {
+    server = await createTestServer({
+      public: {
+        bind: {
+          port,
+        },
+      },
+    })
+    await server.start()
   })
-  after('Shut down the server', async function() {
+  after('Shut down the server', async function () {
     if (server) {
       await server.stop()
     }
@@ -86,28 +104,13 @@ if (process.env.TESTED_SERVER_URL) {
 
 const skipIntercepted = envFlag(process.env.SKIP_INTERCEPTED, false)
 const runner = new Runner({ baseUrl, skipIntercepted, retry })
-runner.prepare()
+await runner.prepare()
 
 // The server's request cache causes side effects between tests.
 if (!process.env.TESTED_SERVER_URL) {
   runner.beforeEach = () => {
     server.reset()
   }
-}
-
-const args = minimist(process.argv.slice(3))
-const stdinOption = args.stdin
-const onlyOption = args.only
-
-let onlyServices
-
-if (stdinOption && onlyOption) {
-  console.error('Do not use --only with --stdin')
-} else if (stdinOption) {
-  const allStdin = readAllStdinSync().trim()
-  onlyServices = allStdin ? allStdin.split('\n') : []
-} else if (onlyOption) {
-  onlyServices = onlyOption.split(',')
 }
 
 if (typeof onlyServices === 'undefined' || onlyServices.includes('*****')) {
@@ -118,12 +121,10 @@ if (typeof onlyServices === 'undefined' || onlyServices.includes('*****')) {
 } else {
   console.info(
     `Running tests for ${onlyServices.length} services: ${onlyServices.join(
-      ', '
-    )}.\n`
+      ', ',
+    )}.\n`,
   )
   runner.only(onlyServices)
 }
 
 runner.toss()
-// Invoke run() asynchronously, because Mocha will not start otherwise.
-process.nextTick(run)

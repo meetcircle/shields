@@ -1,7 +1,6 @@
-'use strict'
-
-const { isMetric } = require('../test-validators')
-const t = (module.exports = require('../tester').createServiceTester())
+import { isMetric } from '../test-validators.js'
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('bugs')
   .get('/sevenzip/bugs.json')
@@ -19,9 +18,7 @@ t.create('feature requests')
   })
   .timeout(10000)
 
-t.create('invalid project')
-  .get('/invalid/bugs.json')
-  .expectBadge({
-    label: 'open tickets',
-    message: 'project not found',
-  })
+t.create('invalid project').get('/invalid/bugs.json').expectBadge({
+  label: 'open tickets',
+  message: 'project not found',
+})

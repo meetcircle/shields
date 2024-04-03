@@ -7,7 +7,7 @@
 /private
 /index.html
 /shields.env
-gh-badges/package-lock.json
+badge-maker/package-lock.json
 
 # Folder view configuration files
 .DS_Store
@@ -92,10 +92,7 @@ typings/
 
 # Temporary build artifacts.
 /build
-.next
-badge-examples.json
-supported-features.json
-service-definitions.yml
+frontend/categories/*.yaml
 
 # Local runtime configuration.
 /config/local*.yml
@@ -103,13 +100,20 @@ service-definitions.yml
 # Template for the local runtime configuration.
 !/config/local*.template.yml
 
-# Gatsby
-/.cache
-/public
-
 # Cypress
 /cypress/videos/
 /cypress/screenshots/
 
 # Rendered API docs
 /api-docs/
+
+# Flamebearer
+flamegraph.html
+
+# config file for node-pg-migrate
+migrations-config.json
+
+# Frontend/Docusaurus
+frontend/.docusaurus
+frontend/.cache-loader
+/public

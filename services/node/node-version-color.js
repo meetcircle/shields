@@ -1,27 +1,70 @@
-'use strict'
+import dayjs from 'dayjs'
+import semver from 'semver'
+import { getCachedResource } from '../../core/base-service/resource-cache.js'
 
-const { promisify } = require('util')
-const semver = require('semver')
-const { regularUpdate } = require('../../core/legacy/regular-update')
+const dateFormat = 'YYYY-MM-DD'
 
-function getLatestVersion() {
-  return promisify(regularUpdate)({
-    url: 'https://nodejs.org/dist/latest/SHASUMS256.txt',
-    intervalMillis: 24 * 3600 * 1000,
+async function getVersion(version) {
+  let semver = ''
+  if (version) {
+    semver = `-${version}.x`
+  }
+  return getCachedResource({
+    url: `https://nodejs.org/dist/latest${semver}/SHASUMS256.txt`,
     json: false,
     scraper: shasums => {
       // tarball index start, tarball index end
       const taris = shasums.indexOf('node-v')
       const tarie = shasums.indexOf('\n', taris)
       const tarball = shasums.slice(taris, tarie)
-      const version = tarball.split('-')[1]
-      return version
+      return tarball.split('-')[1]
     },
   })
 }
 
-async function versionColorForRange(range) {
-  const latestVersion = await getLatestVersion()
+function ltsVersionsScraper(versions) {
+  const currentDate = dayjs().format(dateFormat)
+  return Object.keys(versions).filter(function (version) {
+    const data = versions[version]
+    return data.lts && data.lts < currentDate && data.end > currentDate
+  })
+}
+
+async function getCurrentVersion() {
+  return getVersion()
+}
+
+async function getLtsVersions() {
+  const versions = await getCachedResource({
+    url: 'https://raw.githubusercontent.com/nodejs/Release/master/schedule.json',
+    scraper: ltsVersionsScraper,
+  })
+  return Promise.all(versions.map(getVersion))
+}
+
+async function versionColorForRangeLts(range) {
+  const ltsVersions = await getLtsVersions()
+  try {
+    const matchesAll = ltsVersions.reduce(function (satisfies, version) {
+      return satisfies && semver.satisfies(version, range)
+    }, true)
+    const matchesSome = ltsVersions.reduce(function (satisfies, version) {
+      return satisfies || semver.satisfies(version, range)
+    }, false)
+    if (matchesAll) {
+      return 'brightgreen'
+    } else if (matchesSome) {
+      return 'yellow'
+    } else {
+      return 'orange'
+    }
+  } catch (e) {
+    return 'lightgray'
+  }
+}
+
+async function versionColorForRangeCurrent(range) {
+  const latestVersion = await getCurrentVersion()
   try {
     if (semver.satisfies(latestVersion, range)) {
       return 'brightgreen'
@@ -35,7 +78,4 @@ async function versionColorForRange(range) {
   }
 }
 
-module.exports = {
-  getLatestVersion,
-  versionColorForRange,
-}
+export { versionColorForRangeCurrent, versionColorForRangeLts }

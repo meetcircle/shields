@@ -1,47 +1,25 @@
-'use strict'
+import { test, given } from 'sazerac'
+import { GithubRelease } from './github-release.service.js'
 
-const { test, given } = require('sazerac')
-const { GithubRelease } = require('./github-release.service')
-
-describe('GithubRelease', function() {
-  test(GithubRelease.getLatestRelease, () => {
-    const releaseFixture = [
-      { tag_name: 'cheese', prerelease: false }, // any old string
-      { tag_name: 'v1.2', prerelease: false }, // semver release
-      { tag_name: 'v1.3-beta3', prerelease: true }, // semver pre-release
-    ]
-    given({
-      releases: releaseFixture,
-      sort: 'semver',
-      includePrereleases: true,
-    }).expect({ tag_name: 'v1.3-beta3', prerelease: true })
-    given({
-      releases: releaseFixture,
-      sort: 'semver',
-      includePrereleases: false,
-    }).expect({ tag_name: 'v1.2', prerelease: false })
-    given({
-      releases: releaseFixture,
-      sort: 'date',
-      includePrereleases: true,
-    }).expect({ tag_name: 'cheese', prerelease: false })
-    given({
-      releases: releaseFixture,
-      sort: 'date',
-      includePrereleases: false,
-    }).expect({ tag_name: 'cheese', prerelease: false })
-
-    // if there are only pre-releases to choose from
-    // return a pre-release anyway in preference to nothing
-    given({
-      releases: [{ tag_name: '1.2.0-beta', prerelease: true }],
-      sort: 'semver',
-      includePrereleases: false,
-    }).expect({ tag_name: '1.2.0-beta', prerelease: true })
-    given({
-      releases: [{ tag_name: '1.2.0-beta', prerelease: true }],
-      sort: 'date',
-      includePrereleases: false,
-    }).expect({ tag_name: '1.2.0-beta', prerelease: true })
+describe('GithubRelease', function () {
+  test(GithubRelease.transform, () => {
+    given({ name: null, tag_name: '0.1.2', prerelease: true }, 'tag').expect({
+      version: '0.1.2',
+      isPrerelease: true,
+    })
+    given(
+      { name: null, tag_name: '0.1.3', prerelease: true },
+      'release',
+    ).expect({
+      version: '0.1.3',
+      isPrerelease: true,
+    })
+    given(
+      { name: 'fun name', tag_name: '1.0.0', prerelease: false },
+      'release',
+    ).expect({
+      version: 'fun name',
+      isPrerelease: false,
+    })
   })
 })

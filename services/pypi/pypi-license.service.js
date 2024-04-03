@@ -1,28 +1,23 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { renderLicenseBadge } from '../licenses.js'
+import PypiBase from './pypi-base.js'
+import { getLicenses } from './pypi-helpers.js'
 
-const { renderLicenseBadge } = require('../licenses')
-const PypiBase = require('./pypi-base')
-const { getLicenses } = require('./pypi-helpers')
+export default class PypiLicense extends PypiBase {
+  static category = 'license'
 
-module.exports = class PypiLicense extends PypiBase {
-  static get category() {
-    return 'license'
-  }
+  static route = this.buildRoute('pypi/l')
 
-  static get route() {
-    return this.buildRoute('pypi/l')
-  }
-
-  static get examples() {
-    return [
-      {
-        title: 'PyPI - License',
-        pattern: ':packageName',
-        namedParams: { packageName: 'Django' },
-        staticPreview: this.render({ licenses: ['BSD'] }),
-        keywords: ['python'],
+  static openApi = {
+    '/pypi/l/{packageName}': {
+      get: {
+        summary: 'PyPI - License',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'Django',
+        }),
       },
-    ]
+    },
   }
 
   static render({ licenses }) {

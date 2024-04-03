@@ -1,35 +1,29 @@
-'use strict'
+import { pathParams } from '../index.js'
+import { pep440VersionColor } from '../color-formatters.js'
+import { renderVersionBadge } from '../version.js'
+import PypiBase from './pypi-base.js'
 
-const { renderVersionBadge } = require('../version')
-const PypiBase = require('./pypi-base')
+export default class PypiVersion extends PypiBase {
+  static category = 'version'
 
-module.exports = class PypiVersion extends PypiBase {
-  static get category() {
-    return 'version'
-  }
+  static route = this.buildRoute('pypi/v')
 
-  static get route() {
-    return this.buildRoute('pypi/v')
-  }
-
-  static get examples() {
-    return [
-      {
-        title: 'PyPI',
-        pattern: ':packageName',
-        namedParams: { packageName: 'nine' },
-        staticPreview: this.render({ version: '1.0.0' }),
-        keywords: ['python'],
+  static openApi = {
+    '/pypi/v/{packageName}': {
+      get: {
+        summary: 'PyPI - Version',
+        parameters: pathParams({
+          name: 'packageName',
+          example: 'nine',
+        }),
       },
-    ]
+    },
   }
 
-  static get defaultBadgeData() {
-    return { label: 'pypi' }
-  }
+  static defaultBadgeData = { label: 'pypi' }
 
   static render({ version }) {
-    return renderVersionBadge({ version })
+    return renderVersionBadge({ version, versionFormatter: pep440VersionColor })
   }
 
   async handle({ egg }) {

@@ -1,11 +1,9 @@
-'use strict'
-
-const { expect } = require('chai')
-const sinon = require('sinon')
-const xpath = require('xpath')
-const { test, given } = require('sazerac')
-const DynamicXml = require('./dynamic-xml.service')
-const { InvalidResponse } = require('..')
+import { expect } from 'chai'
+import sinon from 'sinon'
+import xpath from 'xpath'
+import { test, given } from 'sazerac'
+import { InvalidResponse } from '../index.js'
+import DynamicXml from './dynamic-xml.service.js'
 
 const exampleXml = `<?xml version="1.0"?>
 <catalog>
@@ -22,22 +20,22 @@ const exampleXml = `<?xml version="1.0"?>
 </catalog>
 `
 
-describe('DynamicXml', function() {
-  describe('transform()', function() {
-    beforeEach(function() {
+describe('DynamicXml', function () {
+  describe('transform()', function () {
+    beforeEach(function () {
       sinon.stub(xpath, 'select').returns(undefined)
     })
 
-    afterEach(function() {
+    afterEach(function () {
       sinon.restore()
     })
 
-    it('throws InvalidResponse on unsupported query', function() {
+    it('throws InvalidResponse on unsupported query', function () {
       expect(() =>
         DynamicXml.prototype.transform({
           pathExpression: '//book/title',
           buffer: exampleXml,
-        })
+        }),
       )
         .to.throw(InvalidResponse)
         .with.property('prettyMessage', 'unsupported query')
@@ -54,7 +52,7 @@ describe('DynamicXml', function() {
     given({ pathExpression: '//book/title/text()', buffer: exampleXml }).expect(
       {
         values: ["XML Developer's Guide", 'Midnight Rain'],
-      }
+      },
     )
     given({
       pathExpression: 'string(//book[1]/title)',

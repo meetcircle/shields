@@ -1,33 +1,22 @@
-'use strict'
-
-const t = (module.exports = require('../tester').createServiceTester())
+import { createServiceTester } from '../tester.js'
+export const t = await createServiceTester()
 
 t.create('maven metadata (badge extension)')
   .get(
     '/http/central.maven.org/maven2/com/google/code/gson/gson/maven-metadata.xml.json',
-    {
-      followRedirect: false,
-    }
   )
-  .expectStatus(301)
-  .expectHeader(
-    'Location',
+  .expectRedirect(
     `/maven-metadata/v.json?metadataUrl=${encodeURIComponent(
-      'http://central.maven.org/maven2/com/google/code/gson/gson/maven-metadata.xml'
-    )}`
+      'http://central.maven.org/maven2/com/google/code/gson/gson/maven-metadata.xml',
+    )}`,
   )
 
 t.create('maven metadata (no badge extension)')
   .get(
     '/http/central.maven.org/maven2/com/google/code/gson/gson/maven-metadata.xml',
-    {
-      followRedirect: false,
-    }
   )
-  .expectStatus(301)
-  .expectHeader(
-    'Location',
+  .expectRedirect(
     `/maven-metadata/v.svg?metadataUrl=${encodeURIComponent(
-      'http://central.maven.org/maven2/com/google/code/gson/gson/maven-metadata.xml'
-    )}`
+      'http://central.maven.org/maven2/com/google/code/gson/gson/maven-metadata.xml',
+    )}`,
   )

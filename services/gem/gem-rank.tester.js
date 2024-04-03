@@ -1,26 +1,16 @@
-'use strict'
+import { createServiceTester } from '../tester.js'
+import { isOrdinalNumber, isOrdinalNumberDaily } from '../test-validators.js'
+export const t = await createServiceTester()
 
-const Joi = require('@hapi/joi')
-const t = (module.exports = require('../tester').createServiceTester())
+t.create('total rank (valid)').get('/rt/rspec-puppet-facts.json').expectBadge({
+  label: 'rank',
+  message: isOrdinalNumber,
+})
 
-const isOrdinalNumber = Joi.string().regex(/^[1-9][0-9]+(ᵗʰ|ˢᵗ|ⁿᵈ|ʳᵈ)$/)
-const isOrdinalNumberDaily = Joi.string().regex(
-  /^[1-9][0-9]*(ᵗʰ|ˢᵗ|ⁿᵈ|ʳᵈ) daily$/
-)
-
-t.create('total rank (valid)')
-  .get('/rt/rspec-puppet-facts.json')
-  .expectBadge({
-    label: 'rank',
-    message: isOrdinalNumber,
-  })
-
-t.create('daily rank (valid)')
-  .get('/rd/rails.json')
-  .expectBadge({
-    label: 'rank',
-    message: isOrdinalNumberDaily,
-  })
+t.create('daily rank (valid)').get('/rd/rails.json').expectBadge({
+  label: 'rank',
+  message: isOrdinalNumberDaily,
+})
 
 t.create('rank (not found)')
   .get('/rt/not-a-package.json')
@@ -36,6 +26,6 @@ t.create('rank is null')
           date: '2019-01-06',
           daily_ranking: null,
         },
-      ])
+      ]),
   )
   .expectBadge({ label: 'rank', message: 'invalid rank' })

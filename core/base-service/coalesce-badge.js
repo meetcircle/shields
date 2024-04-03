@@ -1,12 +1,10 @@
-'use strict'
-
-const {
+import {
   decodeDataUrlFromQueryParam,
   prepareNamedLogo,
-} = require('../../lib/logos')
-const { svg2base64 } = require('../../lib/svg-helpers')
-const coalesce = require('./coalesce')
-const toArray = require('./to-array')
+} from '../../lib/logos.js'
+import { svg2base64 } from '../../lib/svg-helpers.js'
+import coalesce from './coalesce.js'
+import toArray from './to-array.js'
 
 // Translate modern badge data to the legacy schema understood by the badge
 // maker. Allow the user to override the label, color, logo, etc. through the
@@ -18,28 +16,27 @@ const toArray = require('./to-array')
 //
 // Logos are resolved in this manner:
 //
-// 1. When `?logo=` contains the name of one of the Shields logos, or contains
-//    base64-encoded SVG, that logo is used. In the case of a named logo, when
-//    a `&logoColor=` is specified, that color is used. Otherwise the default
-//    color is used. `logoColor` will not be applied to a custom
-//    (base64-encoded) logo; if a custom color is desired the logo should be
-//    recolored prior to making the request. The appearance of the logo can be
-//    customized using `logoWidth`, and in the case of the popout badge,
-//    `logoPosition`. When `?logo=` is specified, any logo-related parameters
-//    specified dynamically by the service, or by default in the service, are
-//    ignored.
+// 1. When `?logo=` contains a named logo or the name of one of the Shields
+//    logos or contains base64-encoded SVG, that logo is used. When a
+//    `&logoColor=` is specified, that color is used (except for the
+//    base64-encoded logos). Otherwise the default color is used. If the color
+//    is specified for a multicolor Shield logo, the named logo will be used and
+//    colored. The appearance of the logo can be customized using `logoWidth`,
+//    and in the case of the popout badge, `logoPosition`. When `?logo=` is
+//    specified, any logo-related parameters specified dynamically by the
+//    service, or by default in the service, are ignored.
 // 2. The second precedence is the dynamic logo returned by a service. This is
 //    used only by the Endpoint badge. The `logoColor` can be overridden by the
 //    query string.
 // 3. In the case of the `social` style only, the last precedence is the
 //    service's default logo. The `logoColor` can be overridden by the query
 //    string.
-module.exports = function coalesceBadge(
+export default function coalesceBadge(
   overrides,
   serviceData,
   // These two parameters were kept separate to make tests clearer.
   defaultBadgeData,
-  { category, _cacheLength: defaultCacheSeconds } = {}
+  { category, _cacheLength: defaultCacheSeconds } = {},
 ) {
   // The "overrideX" naming is based on services that provide badge
   // parameters themselves, which can be overridden by a query string
@@ -104,7 +101,23 @@ module.exports = function coalesceBadge(
     labelColor: defaultLabelColor,
   } = defaultBadgeData
 
-  const style = coalesce(overrideStyle, serviceStyle)
+  let style = coalesce(overrideStyle, serviceStyle)
+  if (typeof style !== 'string') {
+    style = 'flat'
+  }
+  if (style.startsWith('popout')) {
+    style = style.replace('popout', 'flat')
+  }
+  const styleValues = [
+    'plastic',
+    'flat',
+    'flat-square',
+    'for-the-badge',
+    'social',
+  ]
+  if (!styleValues.includes(style)) {
+    style = 'flat'
+  }
 
   let namedLogo, namedLogoColor, logoWidth, logoPosition, logoSvgBase64
   if (overrideLogo) {
@@ -128,7 +141,7 @@ module.exports = function coalesceBadge(
     } else {
       namedLogo = coalesce(
         serviceNamedLogo,
-        style === 'social' ? defaultNamedLogo : undefined
+        style === 'social' ? defaultNamedLogo : undefined,
       )
       namedLogoColor = coalesce(overrideLogoColor, serviceLogoColor)
     }
@@ -144,26 +157,24 @@ module.exports = function coalesceBadge(
   }
 
   return {
-    text: [
-      // Use `coalesce()` to support empty labels and messages, as in the
-      // static badge.
-      coalesce(overrideLabel, serviceLabel, defaultLabel, category),
-      coalesce(serviceMessage, 'n/a'),
-    ],
+    // Use `coalesce()` to support empty labels and messages, as in the static
+    // badge.
+    label: coalesce(overrideLabel, serviceLabel, defaultLabel, category),
+    message: coalesce(serviceMessage, 'n/a'),
     color: coalesce(
       // In case of an error, disregard user's color override.
       isError ? undefined : overrideColor,
       serviceColor,
       defaultColor,
-      'lightgrey'
+      'lightgrey',
     ),
     labelColor: coalesce(
       // In case of an error, disregard user's color override.
       isError ? undefined : overrideLabelColor,
       serviceLabelColor,
-      defaultLabelColor
+      defaultLabelColor,
     ),
-    template: style,
+    style,
     namedLogo,
     logo: logoSvgBase64,
     logoWidth,

@@ -1,26 +1,20 @@
-'use strict'
+import Joi from 'joi'
+import { expect } from 'chai'
+import sinon from 'sinon'
+import trace from './trace.js'
+import { InvalidParameter } from './errors.js'
+import validate from './validate.js'
 
-const Joi = require('@hapi/joi')
-const { expect } = require('chai')
-const sinon = require('sinon')
-const trace = require('./trace')
-const { InvalidParameter } = require('./errors')
-const validate = require('./validate')
-
-describe('validate', function() {
+describe('validate', function () {
   const schema = Joi.object({
     requiredString: Joi.string().required(),
   }).required()
 
-  let sandbox
-  beforeEach(function() {
-    sandbox = sinon.createSandbox()
+  beforeEach(function () {
+    sinon.stub(trace, 'logTrace')
   })
-  afterEach(function() {
-    sandbox.restore()
-  })
-  beforeEach(function() {
-    sandbox.stub(trace, 'logTrace')
+  afterEach(function () {
+    sinon.restore()
   })
 
   const ErrorClass = InvalidParameter
@@ -35,8 +29,8 @@ describe('validate', function() {
     traceSuccessMessage,
   }
 
-  context('schema is not provided', function() {
-    it('throws the expected programmer error', function() {
+  context('schema is not provided', function () {
+    it('throws the expected programmer error', function () {
       try {
         validate(options, { requiredString: 'bar' }, undefined)
         expect.fail('Expected to throw')
@@ -47,32 +41,32 @@ describe('validate', function() {
     })
   })
 
-  context('data matches schema', function() {
-    it('logs the data', function() {
+  context('data matches schema', function () {
+    it('logs the data', function () {
       validate(options, { requiredString: 'bar' }, schema)
       expect(trace.logTrace).to.be.calledWithMatch(
         'validate',
         sinon.match.string,
         traceSuccessMessage,
         { requiredString: 'bar' },
-        { deep: true }
+        { deep: true },
       )
     })
   })
 
-  context('data does not match schema', function() {
-    it('logs the data and throws the expected error', function() {
+  context('data does not match schema', function () {
+    it('logs the data and throws the expected error', function () {
       try {
         validate(
           options,
           { requiredString: ['this', "shouldn't", 'work'] },
-          schema
+          schema,
         )
         expect.fail('Expected to throw')
       } catch (e) {
         expect(e).to.be.an.instanceof(InvalidParameter)
         expect(e.message).to.equal(
-          'Invalid Parameter: "requiredString" must be a string'
+          'Invalid Parameter: "requiredString" must be a string',
         )
         expect(e.prettyMessage).to.equal(prettyErrorMessage)
       }
@@ -80,46 +74,46 @@ describe('validate', function() {
         'validate',
         sinon.match.string,
         traceErrorMessage,
-        '"requiredString" must be a string'
+        '"requiredString" must be a string',
       )
     })
 
-    context('with includeKeys: true', function() {
-      it('includes keys in the error text', function() {
+    context('with includeKeys: true', function () {
+      it('includes keys in the error text', function () {
         try {
           validate(
             { ...options, includeKeys: true },
             {
               requiredString: ['this', "shouldn't", 'work'],
             },
-            schema
+            schema,
           )
           expect.fail('Expected to throw')
         } catch (e) {
           expect(e).to.be.an.instanceof(InvalidParameter)
           expect(e.message).to.equal(
-            'Invalid Parameter: "requiredString" must be a string'
+            'Invalid Parameter: "requiredString" must be a string',
           )
           expect(e.prettyMessage).to.equal(
-            `${prettyErrorMessage}: requiredString`
+            `${prettyErrorMessage}: requiredString`,
           )
         }
       })
     })
   })
 
-  it('allowAndStripUnknownKeys', function() {
+  it('allowAndStripUnknownKeys', function () {
     try {
       validate(
         { ...options, allowAndStripUnknownKeys: false, includeKeys: true },
         { requiredString: 'bar', extra: 'nonsense', more: 'bogus' },
-        schema
+        schema,
       )
       expect.fail('Expected to throw')
     } catch (e) {
       expect(e).to.be.an.instanceof(InvalidParameter)
       expect(e.message).to.equal(
-        'Invalid Parameter: "extra" is not allowed. "more" is not allowed'
+        'Invalid Parameter: "extra" is not allowed. "more" is not allowed',
       )
       expect(e.prettyMessage).to.equal(`${prettyErrorMessage}: extra, more`)
     }

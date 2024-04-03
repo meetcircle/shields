@@ -1,13 +1,11 @@
-'use strict'
+import { expect } from 'chai'
+import nock from 'nock'
+import { test, forCases, given } from 'sazerac'
+import { renderBuildStatusBadge } from '../build-status.js'
+import { cleanUpNockAfterEach, defaultContext } from '../test-helpers.js'
+import JenkinsBuild from './jenkins-build.service.js'
 
-const { expect } = require('chai')
-const nock = require('nock')
-const { test, forCases, given } = require('sazerac')
-const { renderBuildStatusBadge } = require('../build-status')
-const { cleanUpNockAfterEach, defaultContext } = require('../test-helpers')
-const JenkinsBuild = require('./jenkins-build.service')
-
-describe('JenkinsBuild', function() {
+describe('JenkinsBuild', function () {
   test(JenkinsBuild.prototype.transform, () => {
     forCases([
       given({ json: { color: 'red_anime' } }),
@@ -45,27 +43,39 @@ describe('JenkinsBuild', function() {
       color: 'yellow',
     })
     given({ status: 'passing' }).expect(
-      renderBuildStatusBadge({ status: 'passing' })
+      renderBuildStatusBadge({ status: 'passing' }),
     )
     given({ status: 'failing' }).expect(
-      renderBuildStatusBadge({ status: 'failing' })
+      renderBuildStatusBadge({ status: 'failing' }),
     )
     given({ status: 'building' }).expect(
-      renderBuildStatusBadge({ status: 'building' })
+      renderBuildStatusBadge({ status: 'building' }),
     )
     given({ status: 'not built' }).expect(
-      renderBuildStatusBadge({ status: 'not built' })
+      renderBuildStatusBadge({ status: 'not built' }),
     )
   })
 
-  describe('auth', function() {
+  describe('auth', function () {
     cleanUpNockAfterEach()
 
     const user = 'admin'
     const pass = 'password'
-    const config = { private: { jenkins_user: user, jenkins_pass: pass } }
+    const config = {
+      public: {
+        services: {
+          jenkins: {
+            authorizedOrigins: ['https://jenkins.ubuntu.com'],
+          },
+        },
+      },
+      private: {
+        jenkins_user: user,
+        jenkins_pass: pass,
+      },
+    }
 
-    it('sends the auth information as configured', async function() {
+    it('sends the auth information as configured', async function () {
       const scope = nock('https://jenkins.ubuntu.com')
         .get('/server/job/curtin-vmtest-daily-x/api/json?tree=color')
         // This ensures that the expected credentials are actually being sent with the HTTP request.
@@ -81,8 +91,8 @@ describe('JenkinsBuild', function() {
           {
             jobUrl:
               'https://jenkins.ubuntu.com/server/job/curtin-vmtest-daily-x',
-          }
-        )
+          },
+        ),
       ).to.deep.equal({
         label: undefined,
         message: 'passing',
